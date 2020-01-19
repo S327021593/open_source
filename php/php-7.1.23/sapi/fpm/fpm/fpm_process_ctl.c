@@ -292,6 +292,7 @@ int fpm_pctl_init_main() /* {{{ */
 }
 /* }}} */
 
+// 检查所有worker_pool，对每个子进程判断脚本处理时间是否超时，超时则kill掉对应子进程
 static void fpm_pctl_check_request_timeout(struct timeval *now) /* {{{ */
 {
 	struct fpm_worker_pool_s *wp;
@@ -310,6 +311,7 @@ static void fpm_pctl_check_request_timeout(struct timeval *now) /* {{{ */
 }
 /* }}} */
 
+// 空闲子进程管理，数量过多就杀掉最大空闲子进程，数量过少就创建一定数量子进程，使子空闲子进程达到 pm.min_spare_servers
 static void fpm_pctl_perform_idle_server_maintenance(struct timeval *now) /* {{{ */
 {
 	struct fpm_worker_pool_s *wp;
@@ -324,6 +326,7 @@ static void fpm_pctl_perform_idle_server_maintenance(struct timeval *now) /* {{{
 
 		if (wp->config == NULL) continue;
 
+		// 计算出空闲子进程和活跃子进程的数量，并找出空闲时间最长的子进程 last_idle_child
 		for (child = wp->children; child; child = child->next) {
 			if (fpm_request_is_idle(child)) {
 				if (last_idle_child == NULL) {
@@ -359,6 +362,7 @@ static void fpm_pctl_perform_idle_server_maintenance(struct timeval *now) /* {{{
 		fpm_scoreboard_update(idle, active, cur_lq, -1, -1, -1, 0, FPM_SCOREBOARD_ACTION_SET, wp->scoreboard);
 
 		/* this is specific to PM_STYLE_ONDEMAND */
+		// 如果空闲时间最长的子进程已经处理超时，发 SIGQUIT 信号
 		if (wp->config->pm == PM_STYLE_ONDEMAND) {
 			struct timeval last, now;
 
@@ -381,6 +385,7 @@ static void fpm_pctl_perform_idle_server_maintenance(struct timeval *now) /* {{{
 
 		zlog(ZLOG_DEBUG, "[pool %s] currently %d active children, %d spare children, %d running children. Spawning rate %d", wp->config->name, active, idle, wp->running_children, wp->idle_spawn_rate);
 
+		// 如果空闲子进程数量过多（超过 pm_max_spare_servers），给空闲时间最长的子进程发 SIGQUIT 信号
 		if (idle > wp->config->pm_max_spare_servers && last_idle_child) {
 			last_idle_child->idle_kill = 1;
 			fpm_pctl_kill(last_idle_child->pid, FPM_PCTL_QUIT);
@@ -388,6 +393,7 @@ static void fpm_pctl_perform_idle_server_maintenance(struct timeval *now) /* {{{
 			continue;
 		}
 
+		// 如果空闲子进程数量过少（小于pm_min_spare_servers），创建子进程，使空闲子进程数达到 wp->config->pm_min_spare_servers
 		if (idle < wp->config->pm_min_spare_servers) {
 			if (wp->running_children >= wp->config->pm_max_children) {
 				if (!wp->warn_max_children) {
@@ -397,13 +403,14 @@ static void fpm_pctl_perform_idle_server_maintenance(struct timeval *now) /* {{{
 				}
 				wp->idle_spawn_rate = 1;
 				continue;
-			}
+			} 
 
 			if (wp->idle_spawn_rate >= 8) {
 				zlog(ZLOG_WARNING, "[pool %s] seems busy (you may need to increase pm.start_servers, or pm.min/max_spare_servers), spawning %d children, there are %d idle, and %d total children", wp->config->name, wp->idle_spawn_rate, idle, wp->running_children);
 			}
 
 			/* compute the number of idle process to spawn */
+			// 计算还差几个子进程达到 wp->config->pm_min_spare_servers
 			children_to_fork = MIN(wp->idle_spawn_rate, wp->config->pm_min_spare_servers - idle);
 
 			/* get sure it won't exceed max_children */
@@ -419,6 +426,7 @@ static void fpm_pctl_perform_idle_server_maintenance(struct timeval *now) /* {{{
 			}
 			wp->warn_max_children = 0;
 
+			// 创建子进程
 			fpm_children_make(wp, 1, children_to_fork, 1);
 
 			/* if it's a child, stop here without creating the next event
@@ -441,6 +449,7 @@ static void fpm_pctl_perform_idle_server_maintenance(struct timeval *now) /* {{{
 }
 /* }}} */
 
+// 注册心跳时间事件，事件中进行请求超时处理
 void fpm_pctl_heartbeat(struct fpm_event_s *ev, short which, void *arg) /* {{{ */
 {
 	static struct fpm_event_s heartbeat;
@@ -466,6 +475,7 @@ void fpm_pctl_heartbeat(struct fpm_event_s *ev, short which, void *arg) /* {{{ *
 }
 /* }}} */
 
+// 注册事件，空闲子进程数量的维护
 void fpm_pctl_perform_idle_server_maintenance_heartbeat(struct fpm_event_s *ev, short which, void *arg) /* {{{ */
 {
 	static struct fpm_event_s heartbeat;

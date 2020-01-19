@@ -166,6 +166,7 @@ struct fpm_scoreboard_s *fpm_scoreboard_get() /* {{{*/
 }
 /* }}} */
 
+// 返回 scoreboard->procs[child_index]。 scoreboard、child_index空则用全局变量中保存的
 struct fpm_scoreboard_proc_s *fpm_scoreboard_proc_get(struct fpm_scoreboard_s *scoreboard, int child_index) /* {{{*/
 {
 	if (!scoreboard) {
@@ -254,6 +255,7 @@ void fpm_scoreboard_free(struct fpm_scoreboard_s *scoreboard) /* {{{ */
 }
 /* }}} */
 
+// 设置全局变量 fpm_scoreboard、fpm_scoreboard_i 为当前子进程对应的值，并把当前pid保存到 proc->pid
 void fpm_scoreboard_child_use(struct fpm_scoreboard_s *scoreboard, int child_index, pid_t pid) /* {{{ */
 {
 	struct fpm_scoreboard_proc_s *proc;

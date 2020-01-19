@@ -56,6 +56,7 @@ static struct fpm_child_s *fpm_child_alloc() /* {{{ */
 }
 /* }}} */
 
+// 释放 child 结构体内存
 static void fpm_child_free(struct fpm_child_s *child) /* {{{ */
 {
 	free(child);
@@ -86,6 +87,7 @@ static void fpm_child_close(struct fpm_child_s *child, int in_event_loop) /* {{{
 }
 /* }}} */
 
+// 把 child 加入到方法内部保存的work_pool链表的首部
 static void fpm_child_link(struct fpm_child_s *child) /* {{{ */
 {
 	struct fpm_worker_pool_s *wp = child->wp;
@@ -143,6 +145,7 @@ static struct fpm_child_s *fpm_child_find(pid_t pid) /* {{{ */
 }
 /* }}} */
 
+// fpm 创建子进程后，各部分的初始化
 static void fpm_child_init(struct fpm_worker_pool_s *wp) /* {{{ */
 {
 	fpm_globals.max_requests = wp->config->pm_max_requests;
@@ -299,6 +302,7 @@ void fpm_children_bury() /* {{{ */
 }
 /* }}} */
 
+// 创建 fpm_child_s 结构，创建 fd_stdout、fd_stderr 管道
 static struct fpm_child_s *fpm_resources_prepare(struct fpm_worker_pool_s *wp) /* {{{ */
 {
 	struct fpm_child_s *c;
@@ -336,6 +340,10 @@ static void fpm_resources_discard(struct fpm_child_s *child) /* {{{ */
 }
 /* }}} */
 
+// fpm_worker_all_pools 链表中，不是当前子进程负责worker_pool的资源，释放掉
+// 把pid写到当前进程相应的全局变量中
+// 管道关掉读端，并复制写端文件复制文件符到标准输出
+// 释放 child 结构体
 static void fpm_child_resources_use(struct fpm_child_s *child) /* {{{ */
 {
 	struct fpm_worker_pool_s *wp;
@@ -359,6 +367,7 @@ static void fpm_parent_resources_use(struct fpm_child_s *child) /* {{{ */
 }
 /* }}} */
 
+// 根据work_pool配置创建子进程，并初始化
 int fpm_children_make(struct fpm_worker_pool_s *wp, int in_event_loop, int nb_to_spawn, int is_debug) /* {{{ */
 {
 	pid_t pid;
@@ -437,6 +446,7 @@ int fpm_children_make(struct fpm_worker_pool_s *wp, int in_event_loop, int nb_to
 
 int fpm_children_create_initial(struct fpm_worker_pool_s *wp) /* {{{ */
 {
+	// ondemand 模式下，fpm启动时不创建子进程，只需要监听 wp->listening_socket 上的读事件，有连接时回调 fpm_pctl_on_socket_accept()
 	if (wp->config->pm == PM_STYLE_ONDEMAND) {
 		wp->ondemand_event = (struct fpm_event_s *)malloc(sizeof(struct fpm_event_s));
 

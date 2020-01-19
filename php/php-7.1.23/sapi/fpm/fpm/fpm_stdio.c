@@ -234,6 +234,7 @@ int fpm_stdio_prepare_pipes(struct fpm_child_s *child) /* {{{ */
 }
 /* }}} */
 
+// 关闭队列写端，读端fd保存到 child->fd_stdout、child->fd_stderr，并加入到事件，监听读
 int fpm_stdio_parent_use_pipes(struct fpm_child_s *child) /* {{{ */
 {
 	if (0 == child->wp->config->catch_workers_output) { /* not required */
@@ -270,6 +271,7 @@ int fpm_stdio_discard_pipes(struct fpm_child_s *child) /* {{{ */
 }
 /* }}} */
 
+// 全局变量 fd_stdout、fd_stderr 中保存的管道，关掉读端，并分别复制写端文件描述符到 标准输出、标准错误输出
 void fpm_stdio_child_use_pipes(struct fpm_child_s *child) /* {{{ */
 {
 	if (child->wp->config->catch_workers_output) {

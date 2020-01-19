@@ -44,7 +44,7 @@ static void fpm_event_queue_destroy(struct fpm_event_queue_s **queue);
 
 static struct fpm_event_module_s *module;
 static struct fpm_event_queue_s *fpm_event_queue_timer = NULL;
-static struct fpm_event_queue_s *fpm_event_queue_fd = NULL;
+static struct fpm_event_queue_s *fpm_event_queue_fd = NULL;		// 事件列表
 
 static void fpm_event_cleanup(int which, void *arg) /* {{{ */
 {
@@ -371,6 +371,7 @@ void fpm_event_loop(int err) /* {{{ */
 #endif
 	}
 
+	// 监听事件，触发时间事件
 	while (1) {
 		struct fpm_event_queue_s *q, *q2;
 		struct timeval ms;
@@ -388,6 +389,7 @@ void fpm_event_loop(int err) /* {{{ */
 		timerclear(&ms);
 
 		/* search in the timeout queue for the next timer to trigger */
+		// 找出离现在最近的时间事件，用于计算本次的等待时间
 		q = fpm_event_queue_timer;
 		while (q) {
 			if (!timerisset(&ms)) {
@@ -508,7 +510,7 @@ int fpm_event_add(struct fpm_event_s *ev, unsigned long int frequency) /* {{{ */
 	fpm_clock_get(&now);
 	if (frequency >= 1000) {
 		tmp.tv_sec = frequency / 1000;
-		tmp.tv_usec = (frequency % 1000) * 1000;
+		tmp.tv_usec = (frequency % 1000) * 100;
 	} else {
 		tmp.tv_sec = 0;
 		tmp.tv_usec = frequency * 1000;

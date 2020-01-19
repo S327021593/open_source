@@ -5,8 +5,9 @@
 #ifndef FPM_EVENTS_H
 #define FPM_EVENTS_H 1
 
-#define FPM_EV_TIMEOUT  (1 << 0)
-#define FPM_EV_READ     (1 << 1)
+// 事件类型
+#define FPM_EV_TIMEOUT  (1 << 0)	// 时间事件
+#define FPM_EV_READ     (1 << 1)	// 读事件
 #define FPM_EV_PERSIST  (1 << 2)
 #define FPM_EV_EDGE     (1 << 3)
 

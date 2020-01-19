@@ -224,6 +224,9 @@ void fpm_request_finished() /* {{{ */
 }
 /* }}} */
 
+// 状态处于 FPM_REQUEST_ACCEPTING、FPM_REQUEST_END 之间的子进程，
+// proc.accepted 记录的时间和当前时间间隔 terminate_timeout 指定的值时，
+// kill对应子进程（发SIGTERM信号）
 void fpm_request_check_timed_out(struct fpm_child_s *child, struct timeval *now, int terminate_timeout, int slowlog_timeout) /* {{{ */
 {
 	struct fpm_scoreboard_proc_s proc, *proc_p;
